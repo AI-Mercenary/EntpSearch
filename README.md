@@ -2,19 +2,6 @@
 
 ---
 
-## Architecture Overview
-
-```mermaid
-graph TD
-  A[Document Sources (S3, PDFs, etc)] --> B(Tag Generation Agent)
-  B --> C[MongoDB (Index: tags, metadata, descriptions)]
-  D[User/Streamlit UI] --> E(Intelligent Search Agent)
-  E --> C
-  C --> E
-```
-
----
-
 ## Modules
 
 ### 1. Tag Generation Agent
@@ -23,7 +10,7 @@ graph TD
 
 **Responsibilities:**  
 - Automate extraction of source and semantic content tags from documents (supports S3, PDFs, etc.).
-- Use an LLM (e.g., Gemini) to generate and score content-relevant tags and produce concise file descriptions.
+- Use an LLM (e.g., Google Gemini, OpenAI GPT) to generate and score content-relevant tags and produce concise file descriptions.
 - Store all tags, scores, and descriptions in MongoDB for fast retrieval.
 - Support robust batch workflows, resumable processing, and error handling.
 
@@ -33,8 +20,8 @@ graph TD
 
 **Responsibilities:**  
 - Provide a modern, user-friendly search experience via Streamlit.
-- Allow filtering by source tags (e.g., “github”, “notion”, etc.) and/or context-aware AI-generated content tags.
-- Use an LLM to match user queries to content tags and calculate document relevance.
+- Allow filtering by source tags (e.g., "github", "notion", etc.) and/or context-aware AI-generated content tags.
+- Use an LLM (Google Gemini, OpenAI GPT) to match user queries to content tags and calculate document relevance.
 - Return ranked, transparent results with tag and relevance breakdowns.
 
 ---
@@ -60,11 +47,60 @@ graph TD
 - **Python** (core backend)
 - **Streamlit** (UI)
 - **MongoDB** (metadata and tag storage)
-- **Google Gemini LLM** (tag generation and search intelligence)
+- **Google Gemini LLM** and/or **OpenAI GPT** (tag generation and search intelligence)
 - **S3** or similar (document storage)
 - **pdfplumber** (for PDF parsing)
-- **StateGraph** (workflow orchestration for batch tagging)
+- **LangGraph** (agent workflow orchestration, provides StateGraph)
+
+---
+
+## Installation
+
+### Python Dependencies
+
+Install all required dependencies using pip:
+
+```bash
+pip install -r requirements.txt
+```
+
+### Example `requirements.txt`
+
+```txt
+streamlit
+pymongo
+boto3
+pdfplumber
+google-generativeai         # For Google Gemini LLM
+openai                      # For OpenAI GPT
+langgraph                   # For agent workflow orchestration
+python-dotenv
+# Add any other dependencies your project needs
+```
+
+> **Note:**  
+> - For Google Gemini LLM integration, install `google-generativeai` or relevant SDK.
+> - For OpenAI GPT integration, install `openai`.
+> - For agent workflow orchestration, install `langgraph`.
+> - If your LLM provider or S3-compatible storage differs, update the requirements accordingly.
+
+---
+
+## Configuration
+
+- **MongoDB:**  
+  Configure your MongoDB connection string as an environment variable, e.g., `MONGODB_URI`.
+- **S3:**  
+  Set your AWS credentials (or compatible) for document storage.
+- **LLM API Keys:**  
+  Set your Google Gemini API key (e.g., `GEMINI_API_KEY`) and/or OpenAI API key (e.g., `OPENAI_API_KEY`) as environment variables.
+
+Store sensitive information in a `.env` file or your deployment environment.
+
+---
+
 ## References
 
 - [Tag Generation Agent (`agents/tag_generator.py`)](https://github.com/AI-Mercenary/fyndo/blob/main/agents/tag_generator.py)
 - [Intelligent Search Agent (`streamlit_app.py`)](https://github.com/AI-Mercenary/fyndo/blob/main/streamlit_app.py)
+---
