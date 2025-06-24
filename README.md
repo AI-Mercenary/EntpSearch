@@ -4,41 +4,67 @@
 
 ## Modules
 
-### 1. Tag Generation Agent
+### 1. MongoDB Utilities
+
+**Location:** `db/mongo_utils.py`
+
+**Responsibilities:**  
+- Handles all MongoDB operations for tag storage and retrieval.
+- Manages connections, retries, and error handling for robust database access.
+- Provides functions to check tag existence and insert/update tags in the relevant collections.
+- Ensures collections `gen-tags` and `gen-tags-state` exist.
+
+**Typical usage:**
+- Instantiated by other agents for all DB operations.
+- Connection and collection management is handled in the constructor.
+- CRUD methods like `insert_tag`, `tag_exists` are used by the tag generation pipeline.
+
+---
+
+### 2. Tag Generation Agent
 
 **Location:** `agents/tag_generator.py`
 
 **Responsibilities:**  
-- Automate extraction of source and semantic content tags from documents (supports S3, PDFs, etc.).
-- Use an LLM (e.g., Google Gemini, OpenAI GPT) to generate and score content-relevant tags and produce concise file descriptions.
-- Store all tags, scores, and descriptions in MongoDB for fast retrieval.
-- Support robust batch workflows, resumable processing, and error handling.
+- Automates extraction of source and semantic content tags from documents (supports S3, PDFs, DOCX, etc.).
+- Uses LLMs (Google Gemini, OpenAI GPT) to generate and score content-relevant tags and produce concise file descriptions.
+- Stores all tags, scores, and descriptions in MongoDB via `mongo_utils`.
+- Supports robust batch workflows, resumable processing, logging, and error handling.
+- Loads configuration from `config.yaml` and credentials from `.env`.
+- Extensible for new file types and tag logic.
 
-### 2. Intelligent Search Agent
+---
+
+### 3. Intelligent Search Agent
 
 **Location:** `streamlit_app.py`
 
 **Responsibilities:**  
-- Provide a modern, user-friendly search experience via Streamlit.
-- Allow filtering by source tags (e.g., "github", "notion", etc.) and/or context-aware AI-generated content tags.
-- Use an LLM (Google Gemini, OpenAI GPT) to match user queries to content tags and calculate document relevance.
-- Return ranked, transparent results with tag and relevance breakdowns.
+- Provides a modern, user-friendly search experience via Streamlit.
+- Allows filtering by source tags (e.g., "github", "notion", etc.) and/or context-aware AI-generated content tags.
+- Uses LLM (Google Gemini, OpenAI GPT) to match user queries to content tags and calculate document relevance.
+- Returns ranked, transparent results with tag and relevance breakdowns.
 
 ---
 
 ## Flow
 
-1. **Tag Generation**
-    - Extract source tags from file path/type.
-    - Parse document content, e.g., PDF text extraction.
-    - Use an LLM to generate content tags and a summary description.
-    - Persist all metadata to MongoDB.
+1. **Database Connection**
+    - On startup, all agents connect to MongoDB using parameters from `.env`.
+    - Collections `gen-tags` (tags & metadata) and `gen-tags-state` (tracking workflow state) are initialized.
+    - Utility functions support safe insertion, update, and existence checks.
 
-2. **Search**
+2. **Tag Generation**
+    - Extract source tags from file path/type.
+    - Parse document content (PDF, DOCX, etc.) using appropriate libraries (`pdfplumber`, `python-docx`, etc.).
+    - Use an LLM to generate content tags and a summary description.
+    - Persist all metadata to MongoDB for fast search and retrieval.
+
+3. **Search**
     - User submits a query and optionally selects source tags.
-    - Retrieve relevant docs from MongoDB using these tags.
+    - Relevant documents are fetched from MongoDB using tag queries.
     - LLM further matches and scores content tags against the user query.
-    - Return and display the top-ranked results.
+    - Top-ranked results are returned and displayed in the UI with tag and relevance breakdowns.
 
 ---
 
@@ -78,6 +104,8 @@ flowchart TD
 - **LangGraph** (agent workflow orchestration, provides StateGraph)
 - **boto3** (AWS S3 access)
 - **python-dotenv** (environment variable loading)
+- **yaml** (configuration parsing)
+- **logging** (robust logging throughout all modules)
 
 ---
 
@@ -130,22 +158,28 @@ mkdir C:\data\db                              # Only if directory doesn't exist 
 
 > Make sure your MongoDB server is running before using the app.
 
-### 2. Run Tag Generation Agent
+### 2. Run Mongo Utility Script Directly
+
+Test your DB connection and utility functions:
+
+```bash
+python db\mongo_utils.py
+```
+
+### 3. Run Tag Generation Agent
+
+Process and tag documents (batch, resumable, robust):
 
 ```bash
 python agents/tag_generator.py
 ```
 
-### 3. Run Intelligent Search Agent (UI)
+### 4. Run Intelligent Search Agent (UI)
+
+Launch the Streamlit search UI:
 
 ```bash
 streamlit run streamlit_app.py
-```
-
-### 4. Run Mongo Utility Script Directly
-
-```bash
-python db\mongo_utils.py
 ```
 
 ---
@@ -166,6 +200,7 @@ langchain-core
 pandas
 python-docx
 botocore
+pyyaml
 ```
 
 ---
@@ -173,19 +208,12 @@ botocore
 ## Configuration
 
 - **MongoDB:**  
-  Configure your MongoDB connection string as an environment variable, e.g., `MONGODB_URI`.
+  Set your MongoDB connection string as `MONGODB_URI` in your environment or `.env` file.
 - **S3:**  
-  Set your AWS credentials (or compatible) for document storage.
+  Set your AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) for document storage.
 - **LLM API Keys:**  
-  Set your Google Gemini API key (e.g., `GEMINI_API_KEY`) and/or OpenAI API key (e.g., `OPENAI_API_KEY`) as environment variables.
+  Set your Google Gemini API key (`GEMINI_API_KEY`) and/or OpenAI API key (`OPENAI_API_KEY`) as environment variables.
 
 Store sensitive information in a `.env` file or your deployment environment.
-
----
-
-## References
-
-- [Tag Generation Agent (`agents/tag_generator.py`)](https://github.com/AI-Mercenary/fyndo/blob/main/agents/tag_generator.py)
-- [Intelligent Search Agent (`streamlit_app.py`)](https://github.com/AI-Mercenary/fyndo/blob/main/streamlit_app.py)
 
 ---
