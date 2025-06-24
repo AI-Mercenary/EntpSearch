@@ -15,16 +15,41 @@ import pdfplumber
 from io import BytesIO
 from docx import Document
 import pandas as pd
+import yaml
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from db.mongo_utils import TagMongoDBUtils
 
 
-# Configure logging to write to a file with timestamp, log level, and message
+# Configure logging to write to a file in the script's directory
 # Purpose: To track execution details, errors, and progress for debugging and monitoring 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename=r'C:\Users\sampa\OneDrive\Documents\Fyndo\tags_gen_log.txt', filemode='w')
+log_file = os.path.join(os.path.dirname(__file__), "tags_gen_log.txt")
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename=log_file, filemode='w')
 logger = logging.getLogger(__name__)
 
-#To maintain and pass state across workflow nodes, ensuring type safety
+# Load configuration from config.yaml
+def load_config(config_path: str = "config.yaml") -> Dict:
+    """Load configuration from a YAML file."""
+    try:
+        with open(config_path, 'r') as file:
+            config = yaml.safe_load(file)
+        if not config or "AWS_S3_PATH" not in config:
+            raise ValueError("AWS_S3_PATH not found in config.yaml")
+        logger.info(f"Loaded configuration from {config_path}")
+        return config
+    except FileNotFoundError:
+        logger.error(f"Config file {config_path} not found")
+        raise
+    except yaml.YAMLError as e:
+        logger.error(f"Error parsing YAML file {config_path}: {str(e)}")
+        raise
+    except ValueError as e:
+        logger.error(f"Configuration error: {str(e)}")
+        raise
+    except Exception as e:
+        logger.error(f"Error loading config from {config_path}: {str(e)}")
+        raise
+
+# To maintain and pass state across workflow nodes, ensuring type safety
 class TagGenerationState(TypedDict):
     file_keys: List[str]
     current_file_index: int
@@ -165,9 +190,6 @@ def initialize_resources(input_path: str, session_id: str, force_reprocess: bool
         test_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7, max_retries=2, api_key=openai_api_key)
         test_llm.invoke("Test query: return 'OK'")
         logger.info("OpenAI API key is valid")
-
-        if not input_path.startswith("s3://bucketdatafyndo.ai/"):
-            raise ValueError("Input path must be s3://bucketdatafyndo.ai/")
 
         s3_client, bucket_name, file_keys = s3_connect_func(input_path)
         
@@ -451,7 +473,7 @@ def build_tag_generator_workflow():
     return workflow.compile()
 
 # Run the tag generation workflow
-def run_tag_generator(input_path: str = "s3://bucketdatafyndo.ai/", session_id: str = "fyndsession", force_reprocess: bool = True):
+def run_tag_generator(input_path: str, session_id: str = "fyndsession", force_reprocess: bool = True):
     logger.info(f"Starting workflow with input_path: {input_path}, force_reprocess: {force_reprocess}")
     try:
         state = initialize_resources(input_path, session_id, force_reprocess)
@@ -483,6 +505,8 @@ def run_tag_generator(input_path: str = "s3://bucketdatafyndo.ai/", session_id: 
         if "state" in locals():
             cleanup_resources(state)
         return {"error": str(e)}
+
 # Entry point
 if __name__ == "__main__":
-    run_tag_generator(force_reprocess=False)
+    config = load_config()
+    run_tag_generator(input_path=config["AWS_S3_PATH"], force_reprocess=False)
