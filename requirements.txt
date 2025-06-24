@@ -1,0 +1,10 @@
+python-dotenv
+boto3
+botocore
+langchain-openai
+langchain-core
+langgraph
+pymongo
+pdfplumber
+python-docx
+pandas

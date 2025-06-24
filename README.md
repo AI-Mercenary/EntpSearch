@@ -26,7 +26,7 @@
 
 ---
 
-## Data Flow
+## Flow
 
 1. **Tag Generation**
     - Extract source tags from file path/type.
@@ -42,6 +42,29 @@
 
 ---
 
+## Flow Diagram
+
+```mermaid
+flowchart TD
+    subgraph Tag Generation
+        A[Document in S3 or Upload] --> B[Extract Source Tags & Content (pdfplumber, python-docx, pandas)]
+        B --> C[LLM Tag/Description Generation (OpenAI/Gemini via LangChain)]
+        C --> D[Store tags, scores, descriptions in MongoDB]
+    end
+
+    subgraph Search
+        E[User Query via Streamlit UI] --> F[Fetch relevant docs from MongoDB]
+        F --> G[LLM Match Content Tags to Query (OpenAI/Gemini)]
+        G --> H[Rank & Return Results with Tag & Relevance Breakdown]
+        H --> I[Display Results in UI]
+    end
+
+    style Tag Generation fill:#f9f,stroke:#333,stroke-width:2px
+    style Search fill:#bbf,stroke:#333,stroke-width:2px
+```
+
+---
+
 ## Technologies Used
 
 - **Python** (core backend)
@@ -50,39 +73,100 @@
 - **Google Gemini LLM** and/or **OpenAI GPT** (tag generation and search intelligence)
 - **S3** or similar (document storage)
 - **pdfplumber** (for PDF parsing)
+- **python-docx** (DOCX parsing)
+- **pandas** (data manipulation)
 - **LangGraph** (agent workflow orchestration, provides StateGraph)
+- **boto3** (AWS S3 access)
+- **python-dotenv** (environment variable loading)
 
 ---
 
-## Installation
+## Installation & Setup
 
-### Python Dependencies
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/AI-Mercenary/fyndo.git
+cd fyndo
+```
+
+### 2. Set up Python virtual environment (recommended)
+
+```bash
+python3 -m venv venv
+source venv/bin/activate        # On Windows use: venv\Scripts\activate
+```
+
+### 3. Install Python Dependencies
 
 Install all required dependencies using pip:
 
 ```bash
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### Example `requirements.txt`
+### 4. Configure Environment Variables
+
+Copy the example env file and add your credentials:
+
+```bash
+cp .env.example .env
+# Then, edit .env and set MONGODB_URI, AWS credentials, OPENAI_API_KEY, GEMINI_API_KEY, etc.
+```
+
+---
+
+## Usage
+
+### 1. Start MongoDB Server
+
+Open a new terminal and run:
+
+```bash
+mkdir C:\data\db                              # Only if directory doesn't exist (Windows)
+"C:\Program Files\MongoDB\Server\8.0\bin\mongod.exe" --dbpath C:\data\db
+```
+
+> Make sure your MongoDB server is running before using the app.
+
+### 2. Run Tag Generation Agent
+
+```bash
+python agents/tag_generator.py
+```
+
+### 3. Run Intelligent Search Agent (UI)
+
+```bash
+streamlit run streamlit_app.py
+```
+
+### 4. Run Mongo Utility Script Directly
+
+```bash
+python db\mongo_utils.py
+```
+
+---
+
+## requirements.txt
 
 ```txt
 streamlit
 pymongo
 boto3
 pdfplumber
-google-generativeai         # For Google Gemini LLM
-openai                      # For OpenAI GPT
-langgraph                   # For agent workflow orchestration
+google-generativeai
+openai
+langgraph
 python-dotenv
-# Add any other dependencies your project needs
+langchain-openai
+langchain-core
+pandas
+python-docx
+botocore
 ```
-
-> **Note:**  
-> - For Google Gemini LLM integration, install `google-generativeai` or relevant SDK.
-> - For OpenAI GPT integration, install `openai`.
-> - For agent workflow orchestration, install `langgraph`.
-> - If your LLM provider or S3-compatible storage differs, update the requirements accordingly.
 
 ---
 
@@ -103,4 +187,5 @@ Store sensitive information in a `.env` file or your deployment environment.
 
 - [Tag Generation Agent (`agents/tag_generator.py`)](https://github.com/AI-Mercenary/fyndo/blob/main/agents/tag_generator.py)
 - [Intelligent Search Agent (`streamlit_app.py`)](https://github.com/AI-Mercenary/fyndo/blob/main/streamlit_app.py)
+
 ---
