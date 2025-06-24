@@ -1,20 +1,5 @@
 **fyndo** is an enterprise search platform designed to provide intelligent document discovery and knowledge retrieval across organizational data silos. It is powered by AI-driven tag generation and an advanced search module for precise, context-aware results.
 
----
-
-## Architecture Overview
-
-```mermaid
-graph TD
-  A[Document Sources (S3, PDFs, etc)] --> B(Tag Generation Agent)
-  B --> C[MongoDB (Index: tags, metadata, descriptions)]
-  D[User/Streamlit UI] --> E(Intelligent Search Agent)
-  E --> C
-  C --> E
-```
-
----
-
 ## Modules
 
 ### 1. Tag Generation Agent
