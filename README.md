@@ -30,8 +30,8 @@
 
 1. **Tag Generation**
     - Extract source tags from file path/type.
-    - Parse document content (e.g., PDF text extraction).
-    - Use an LLM to generate content tags + a summary description.
+    - Parse document content, e.g., PDF text extraction.
+    - Use an LLM to generate content tags and a summary description.
     - Persist all metadata to MongoDB.
 
 2. **Search**
@@ -46,20 +46,20 @@
 
 ```mermaid
 flowchart TD
-    subgraph Tag Generation
-        A[Document in S3 or Upload] --> B[Extract Source Tags & Content (pdfplumber, python-docx, pandas)]
-        B --> C[LLM Tag/Description Generation (OpenAI/Gemini via LangChain)]
+    subgraph TagGeneration
+        A[Document in S3 or Upload] --> B[Extract Source Tags and Content: pdfplumber, python-docx, pandas]
+        B --> C[LLM Tag and Description Generation: OpenAI or Gemini via LangChain]
         C --> D[Store tags, scores, descriptions in MongoDB]
     end
 
     subgraph Search
         E[User Query via Streamlit UI] --> F[Fetch relevant docs from MongoDB]
-        F --> G[LLM Match Content Tags to Query (OpenAI/Gemini)]
-        G --> H[Rank & Return Results with Tag & Relevance Breakdown]
+        F --> G[LLM Match Content Tags to Query: OpenAI or Gemini]
+        G --> H[Rank and Return Results with Tag and Relevance Breakdown]
         H --> I[Display Results in UI]
     end
 
-    style Tag Generation fill:#f9f,stroke:#333,stroke-width:2px
+    style TagGeneration fill:#f9f,stroke:#333,stroke-width:2px
     style Search fill:#bbf,stroke:#333,stroke-width:2px
 ```
 
@@ -119,7 +119,7 @@ cp .env.example .env
 
 ## Usage
 
-### 1. Start MongoDB Server
+### 1. Start MongoDB Server (Windows example)
 
 Open a new terminal and run:
 
